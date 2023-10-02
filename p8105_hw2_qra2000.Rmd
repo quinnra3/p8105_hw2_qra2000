@@ -7,6 +7,7 @@ date: "2023-09-26"
 ```{r load_libraries, include = FALSE}
 library(tidyverse)
 library(readxl)
+library(dplyr)
 ```
 
 ## Problem 1
@@ -69,9 +70,9 @@ str(data_538)
 ## Problem 2
 
 Read and clean the Mr. Trash Wheel sheet:
-* specify the sheet in the Excel file and to omit non-data entries (rows with notes / figures; columns containing notes) using arguments in `read_excel`
-* use reasonable variable names
-* omit rows that do not include dumpster-specific data
+*specify the sheet in the Excel file and to omit non-data entries (rows with notes / figures; columns containing notes) using arguments in `read_excel`
+*use reasonable variable names
+*omit rows that do not include dumpster-specific data
 
 The data include a column for the (approximate) number of homes powered. This calculation is described in the Homes powered note, but not applied to every row in the dataset. Update the data to include a new homes_powered variable based on this calculation.
 
@@ -85,7 +86,8 @@ mr_trash_df =
   drop_na(dumpster) |> 
   mutate(
     homes_powered = (weight_tons*500)/30,
-    mr_trash_wheel = "Mr Trash Wheel Data"
+    mr_trash_wheel = "Mr Trash Wheel Data",
+    year = as.numeric(year)
   )
   
 mr_trash_df
@@ -103,7 +105,8 @@ prof_trash_wheel_df =
   drop_na(dumpster) |> 
   mutate(
     homes_powered = (weight_tons*500)/30,
-    prof_trash_wheel = "Professor Trash Wheel"
+    prof_trash_wheel = "Professor Trash Wheel",
+    year = as.numeric(year)
   )
 
 prof_trash_wheel_df
@@ -119,7 +122,8 @@ gwynnda_df =
   drop_na(dumpster) |> 
   mutate(
     homes_powered = (weight_tons*500)/30,
-    gwynnda_trash_wheel = "Gywnnda Trash Wheel"
+    gwynnda_trash_wheel = "Gywnnda Trash Wheel",
+    year = as.numeric(year)
   )
 
 gwynnda_df
@@ -130,8 +134,93 @@ Combine the Professor Trash Wheel, Gwynda, and Mr. Trash Wheel datasets to produ
 ```{r}
 trash_wheel_data = 
   bind_rows(mr_trash_df, prof_trash_wheel_df, gwynnda_df)
+
+trash_wheel_data
 ```
 
+[insert description here:
+
+
+
+total weight of trash collected by Professor Trash Wheel -> 190.12
+
+total number of cigarette butts collected by Gwynnda in July of 2021 -> 16,300
+
+]
+
+## Problem 3
+
+Import, clean, and tidy the dataset of baseline demographics. Ensure that `sex` and `APOE4` carrier status are appropriate encoded (i.e. not numeric), and remove any participants who do not meet the stated inclusion criteria (i.e. no MCI at baseline).
+
+```{r}
+MCI_baseline_clean = 
+  read.csv("./data/data_mci/MCI_baseline.csv",
+           skip = 1) |> 
+  janitor::clean_names() |>
+  mutate(
+    sex = case_match(
+      sex,
+      1 ~ "male",
+      0 ~ "female",
+    ),
+    apoe4 = case_match(
+      apoe4,
+      1 ~ "APOE4 carrier",
+      0 ~ "APOE4 non-carrier"
+    )
+  )
+  filter(MCI_baseline_clean, age_at_onset != ".")
+
+MCI_baseline_clean
+```
+
+Discuss important steps in the import process and relevant features of the dataset:
+
+How many participants were recruited, and of these how many develop MCI? What is the average baseline age? What proportion of women in the study are APOE4 carriers?
+- total `id` = 483 
+- of the participants recuirted, 97 developed MCI.
+- average baseline age = 65.04679. 
+- 63 women in the study are APOE4 carriers
+
+```{r}
+select(MCI_baseline_clean, id)
+
+filter(MCI_baseline_clean, age_at_onset != ".")
+
+mean(pull(MCI_baseline_clean, current_age))
+
+filter(MCI_baseline_clean, sex != "male", apoe4 != "APOE4 non-carrier")
+```
+
+Import, clean, and tidy the dataset of longitudinally observed biomarker values:
+
+```{r}
+MCI_amyloid_clean = 
+  read.csv("./data/data_mci/mci_amyloid.csv",
+           skip = 1) |> 
+  janitor::clean_names() |> 
+  mutate(id = `study_id`) |> 
+  select(-study_id) |> 
+  na.omit(MCI_amyloid_clean)
+  
+MCI_amyloid_clean
+```
+
+[Comment on the steps on the import process and the features of the dataset:
+
+
+
+
+]
+
+Check whether some participants appear in only the baseline or amyloid datasets, and comment on your findings. Combine the demographic and biomarker datasets so that only participants who appear in both datasets are retained, and briefly describe the resulting dataset; export the result as a CSV to your data directory.
+
+```{r}
+
+
+
+
+```
 
 
 
