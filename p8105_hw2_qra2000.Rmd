@@ -202,13 +202,13 @@ MCI_amyloid_clean =
   mutate(id = `study_id`) |> 
   select(-study_id) |> 
   na.omit(MCI_amyloid_clean)
-  
+
 MCI_amyloid_clean
 ```
 
 [Comment on the steps on the import process and the features of the dataset:
 
-
+`study_id` is conditional and is duplicate in the .csv file, so that `study_id` corresponds to individual 
 
 
 ]
@@ -216,11 +216,14 @@ MCI_amyloid_clean
 Check whether some participants appear in only the baseline or amyloid datasets, and comment on your findings. Combine the demographic and biomarker datasets so that only participants who appear in both datasets are retained, and briefly describe the resulting dataset; export the result as a CSV to your data directory.
 
 ```{r}
+MCI_combined_data = inner_join(MCI_baseline_clean, MCI_amyloid_clean)
+nrow(MCI_combined_data)
 
-
-
-
+write.csv(MCI_combined_data, "results/MCI Combined Data.csv")
 ```
+
+
+
 
 
 
