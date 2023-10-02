@@ -4,7 +4,7 @@ output: github_document
 date: "2023-09-26"
 ---
 
-```{r load_libraries}
+```{r load_libraries, include = FALSE}
 library(tidyverse)
 library(readxl)
 ```
@@ -69,10 +69,68 @@ str(data_538)
 ## Problem 2
 
 Read and clean the Mr. Trash Wheel sheet:
-* specify the sheet in the Excel file and to omit non-data entries (rows with notes / 
-* figures; columns containing notes) using arguments in read_excel
+* specify the sheet in the Excel file and to omit non-data entries (rows with notes / figures; columns containing notes) using arguments in `read_excel`
 * use reasonable variable names
 * omit rows that do not include dumpster-specific data
+
+The data include a column for the (approximate) number of homes powered. This calculation is described in the Homes powered note, but not applied to every row in the dataset. Update the data to include a new homes_powered variable based on this calculation.
+
+```{r clean_mr_trash}
+mr_trash_df = 
+  read_xlsx(
+    "./data/202207 Trash Wheel Collection Data.xlsx",
+    sheet = "Mr. Trash Wheel",
+    skip = 1)|> 
+  janitor::clean_names() |> 
+  drop_na(dumpster) |> 
+  mutate(
+    homes_powered = (weight_tons*500)/30,
+    mr_trash_wheel = "Mr Trash Wheel Data"
+  )
+  
+mr_trash_df
+```
+
+Next, import, clean, and organize the data for Professor Trash Wheel and Gwynnda. 
+
+```{r clean_prof_trash_wheel}
+prof_trash_wheel_df = 
+  read_xlsx(
+    "./data/202207 Trash Wheel Collection Data.xlsx",
+    sheet = "Professor Trash Wheel",
+    skip = 1)|> 
+  janitor::clean_names() |> 
+  drop_na(dumpster) |> 
+  mutate(
+    homes_powered = (weight_tons*500)/30,
+    prof_trash_wheel = "Professor Trash Wheel"
+  )
+
+prof_trash_wheel_df
+```
+
+```{r clean_gwynnda}
+gwynnda_df = 
+  read_xlsx(
+    "./data/202207 Trash Wheel Collection Data.xlsx",
+    sheet = "Gwynnda Trash Wheel",
+    skip = 1)|> 
+  janitor::clean_names() |> 
+  drop_na(dumpster) |> 
+  mutate(
+    homes_powered = (weight_tons*500)/30,
+    gwynnda_trash_wheel = "Gywnnda Trash Wheel"
+  )
+
+gwynnda_df
+```
+
+Combine the Professor Trash Wheel, Gwynda, and Mr. Trash Wheel datasets to produce a single tidy dataset.
+
+```{r}
+trash_wheel_data = 
+  bind_rows(mr_trash_df, prof_trash_wheel_df, gwynnda_df)
+```
 
 
 
