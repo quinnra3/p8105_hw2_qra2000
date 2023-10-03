@@ -14,7 +14,7 @@ library(dplyr)
 
 First, clean the data in `pols-month.csv`. Use `separate()` to break up the variable `mon` into integer variables `year`, `month`, and `day`; replace `month number` with `month name`; create a president variable taking values `gop` and `dem`, and remove `prez_dem` and `prez_gop`; and remove the `day` variable.
 
-```{r clean_538_pols}
+```{r clean_538_pols, results='hide'}
 month_df = 
   tibble(
     month_num = 1:12,
@@ -33,7 +33,7 @@ pols =
 
 Second, clean the data in `snp.csv` using a similar process to the above. For consistency across datasets, arrange according to `year` and `month`, and organize so that `year` and `month` are the leading columns.
 
-```{r clean_538_snp}
+```{r clean_538_snp, results='hide'}
 snp = 
   read_csv("./data/fivethirtyeight_datasets/snp.csv") |>
   separate(date, into = c("month", "day", "year"), convert = TRUE) |>
@@ -44,7 +44,7 @@ snp =
 
 Third, tidy the unemployment data so that it can be merged with the previous datasets. This process will involve switching from “wide” to “long” format; ensuring that key variables have the same name; and ensuring that key variables take the same values.
 
-```{r clean_538_unemp}
+```{r clean_538_unemp, results='hide'}
 unemployment = 
   read_csv("./data/fivethirtyeight_datasets/unemployment.csv") |>
   rename(year = Year) |>
@@ -59,7 +59,7 @@ unemployment =
 
 Join the datasets by merging snp into pols, and merging unemployment into the result.
 
-```{r merge_538}
+```{r merge_538, results='hide'}
 data_538 = 
   left_join(pols, snp) |>
   left_join(x = _, y = unemployment)
@@ -84,9 +84,9 @@ mr_trash_df =
     skip = 1)|> 
   janitor::clean_names() |> 
   drop_na(dumpster) |> 
+  select(-x15, -x16) |> 
   mutate(
     homes_powered = (weight_tons*500)/30,
-    mr_trash_wheel = "Mr Trash Wheel Data",
     year = as.numeric(year)
     )
 ```
@@ -103,8 +103,8 @@ prof_trash_wheel_df =
   drop_na(dumpster) |> 
   mutate(
     homes_powered = (weight_tons*500)/30,
-    prof_trash_wheel = "Professor Trash Wheel",
-    year = as.numeric(year)
+    year = as.numeric(year),
+    trash_wheel_name = "Professor Trash Wheel",
   )
 
 gwynnda_df = 
@@ -116,7 +116,6 @@ gwynnda_df =
   drop_na(dumpster) |> 
   mutate(
     homes_powered = (weight_tons*500)/30,
-    gwynnda_trash_wheel = "Gywnnda Trash Wheel",
     year = as.numeric(year)
   )
 ```
@@ -126,7 +125,12 @@ Combine the Professor Trash Wheel, Gwynnda, and Mr. Trash Wheel datasets to prod
 ```{r combine_trash_wheel_data}
 trash_wheel_data = 
   bind_rows(mr_trash_df, prof_trash_wheel_df, gwynnda_df)
+
+view(trash_wheel_data)
 ```
+
+The Mr. Trash Wheel, Professor Trash Wheel, and Gwynnda Trash Wheel datasets are sourced from a publicly available excel spreadsheet that details information about the trash collected by the water wheel trash collecting vessles in Baltimore, Maryland. There are `r ncol(trash_wheel_data)` variables in the dataset that combines the data from Mr. Trash Wheel, Professor Trash Wheel, and Gwynnda Trash Wheel. The descriptive variables include the combined dataset include the dumpster number, month, year, and date of the trash that was collected. It also includes the weight in tons and volume in cubic yards. The dataset also includes the total of each type of trash collected, separated into plastic bottles, polystrene, cigarette butts, glass bottles, plastic bags, wrappers, and sport balls. It also includes the calculation of homes powered by the weight (in tons) of trash collected. There are `r nrow(trash_wheel_data)` observations in the combined dataset. There are a number of key observations that can be drawn from this dataset. For example, the total weight of trash Professor Trash Wheel collected is `r subset(trash_wheel_data, trash_wheel_name == "Professor Trash Wheel") |> pull(weight_tons) |> sum()` tons. The total number of cigarette butts collected by Gwynnda in July of 2021 is `r subset(gwynnda_df, year == 2021 & month == "July") |> pull(cigarette_butts) |> sum() |> as.integer()`. 
+
 
 ## Problem 3
 
