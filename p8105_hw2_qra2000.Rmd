@@ -79,7 +79,7 @@ The data include a column for the (approximate) number of homes powered. This ca
 ```{r clean_mr_trash}
 mr_trash_df = 
   read_xlsx(
-    "./data/202207 Trash Wheel Collection Data.xlsx",
+    "./data/202309 Trash Wheel Collection Data.xlsx",
     sheet = "Mr. Trash Wheel",
     skip = 1)|> 
   janitor::clean_names() |> 
@@ -88,17 +88,15 @@ mr_trash_df =
     homes_powered = (weight_tons*500)/30,
     mr_trash_wheel = "Mr Trash Wheel Data",
     year = as.numeric(year)
-  )
-  
-mr_trash_df
+    )
 ```
 
 Next, import, clean, and organize the data for Professor Trash Wheel and Gwynnda. 
 
-```{r clean_prof_trash_wheel}
+```{r clean_prof_trash_wheel and gwynnda_trash_wheel}
 prof_trash_wheel_df = 
   read_xlsx(
-    "./data/202207 Trash Wheel Collection Data.xlsx",
+    "./data/202309 Trash Wheel Collection Data.xlsx",
     sheet = "Professor Trash Wheel",
     skip = 1)|> 
   janitor::clean_names() |> 
@@ -109,13 +107,9 @@ prof_trash_wheel_df =
     year = as.numeric(year)
   )
 
-prof_trash_wheel_df
-```
-
-```{r clean_gwynnda}
 gwynnda_df = 
   read_xlsx(
-    "./data/202207 Trash Wheel Collection Data.xlsx",
+    "./data/202309 Trash Wheel Collection Data.xlsx",
     sheet = "Gwynnda Trash Wheel",
     skip = 1)|> 
   janitor::clean_names() |> 
@@ -125,32 +119,18 @@ gwynnda_df =
     gwynnda_trash_wheel = "Gywnnda Trash Wheel",
     year = as.numeric(year)
   )
-
-gwynnda_df
 ```
 
-Combine the Professor Trash Wheel, Gwynda, and Mr. Trash Wheel datasets to produce a single tidy dataset.
+Combine the Professor Trash Wheel, Gwynnda, and Mr. Trash Wheel datasets to produce a single tidy dataset.
 
-```{r}
+```{r combine_trash_wheel_data}
 trash_wheel_data = 
   bind_rows(mr_trash_df, prof_trash_wheel_df, gwynnda_df)
-
-trash_wheel_data
 ```
-
-[insert description here:
-
-
-
-total weight of trash collected by Professor Trash Wheel -> 190.12
-
-total number of cigarette butts collected by Gwynnda in July of 2021 -> 16,300
-
-]
 
 ## Problem 3
 
-Import, clean, and tidy the dataset of baseline demographics. Ensure that `sex` and `APOE4` carrier status are appropriate encoded (i.e. not numeric), and remove any participants who do not meet the stated inclusion criteria (i.e. no MCI at baseline).
+Import, clean, and tidy the dataset of baseline demographics. Ensure that sex and AOE4 carrier status are appropriate encoded (i.e. not numeric), and remove any participants who do not meet the stated inclusion criteria (i.e. no MCI at baseline).
 
 ```{r}
 MCI_baseline_clean = 
@@ -161,38 +141,19 @@ MCI_baseline_clean =
     sex = case_match(
       sex,
       1 ~ "male",
-      0 ~ "female",
-    ),
+      0 ~ "female"),
     apoe4 = case_match(
       apoe4,
       1 ~ "APOE4 carrier",
-      0 ~ "APOE4 non-carrier"
-    )
-  )
-  filter(MCI_baseline_clean, age_at_onset != ".")
-
-MCI_baseline_clean
+      0 ~ "APOE4 non-carrier",)) |> 
+  filter(age_at_onset != ".")
 ```
 
-Discuss important steps in the import process and relevant features of the dataset:
+The key steps to importing the baseline demographics dataset are first reading the .csv file to R and cleaning the variable names. Then, to ensure that the variables `sex` and `aoe4` are appropriately encoded, use `case_match()` to add dichotomous, meaningful labels according to each. For example, assign "1" for "male", and "1" for "AOE4 carrier". To remove any participants who did not meet the sufficient inclusion criteria for this study, they are filtered out of the dataset using the `filter(!=)` function. 
 
-How many participants were recruited, and of these how many develop MCI? What is the average baseline age? What proportion of women in the study are APOE4 carriers?
-- total `id` = 483 
-- of the participants recuirted, 97 developed MCI.
-- average baseline age = 65.04679. 
-- 63 women in the study are APOE4 carriers
+There are `r ncol(MCI_baseline_clean)` variables included in the baseline demographics dataset, including id, sex, education, current age, APOE4 carrier status (yes/no), and age of MCI onset. The number of participants recruited are `r nrow(MCI_baseline_clean)` with an average age of `r mean(pull(MCI_baseline_clean, current_age))`. During the course of the follow-up period, `r filter(MCI_baseline_clean, age_at_onset != ".") |> nrow()` participants developed MCI. The proportion of women who are APOE4 carriers is `r scales::percent(nrow(filter(MCI_baseline_clean, sex == "female" & apoe4 == "carrier")) / nrow(filter(MCI_baseline_clean, sex == "female")))`.
 
-```{r}
-select(MCI_baseline_clean, id)
-
-filter(MCI_baseline_clean, age_at_onset != ".")
-
-mean(pull(MCI_baseline_clean, current_age))
-
-filter(MCI_baseline_clean, sex != "male", apoe4 != "APOE4 non-carrier")
-```
-
-Import, clean, and tidy the dataset of longitudinally observed biomarker values:
+Import, clean, and tidy the dataset of longitudinally observed biomarker values.
 
 ```{r}
 MCI_amyloid_clean = 
@@ -203,24 +164,34 @@ MCI_amyloid_clean =
   select(-study_id) |> 
   na.omit(MCI_amyloid_clean)
 
-MCI_amyloid_clean
+view(MCI_amyloid_clean)
 ```
+The key steps to importing the longitudinal amyloid observed dataset are first reading in the .csv file to R and cleaning the variable names. Then, rename the variable `study_id` to `id` using the `mutate` function to ensure compatibility with the baseline MCI dataset. NA values are removed using the `na.omit` function. This dataset describes the amyloid β 42/40 ratio over a period of five times for each eligible study participant: baseline, time_2, time_4, time_6, and time_8. The amyloid longitudinal dataset has a total of `r nrow(MCI_amyloid_clean)` participants. 
 
-[Comment on the steps on the import process and the features of the dataset:
-
-`study_id` is conditional and is duplicate in the .csv file, so that `study_id` corresponds to individual 
-
-
-]
-
-Check whether some participants appear in only the baseline or amyloid datasets, and comment on your findings. Combine the demographic and biomarker datasets so that only participants who appear in both datasets are retained, and briefly describe the resulting dataset; export the result as a CSV to your data directory.
+To check whether some participants appear in only the baseline or amyloid datasets, first merge the amyloid longitudinal dataset with the baseline to keep all participants in both datasets.
 
 ```{r}
-MCI_combined_data = inner_join(MCI_baseline_clean, MCI_amyloid_clean)
-nrow(MCI_combined_data)
+MCI_full_join = 
+  full_join(MCI_baseline_clean, MCI_amyloid_clean, by = c("id"))
+```
 
+There are `r nrow(MCI_full_join) - nrow(MCI_baseline_clean)` participants in the baseline set but not amyloid. Conversely, there are `r nrow(MCI_full_join) - nrow(MCI_amyloid_clean)` participants in amyloid but not baseline. There are more participants missing from the amyloid longitudinal dataset because longitudinal studies are difficult to maintain retention from study participants, as they take place over a long period of time. 
+
+Next, combine the demographic and biomarker datasets so that only participants who appear in both datasets are retained, and briefly describe the resulting dataset. 
+
+```{r}
+MCI_combined_data = inner_join(MCI_baseline_clean, MCI_amyloid_clean, by = c("id"))
+```
+
+The dataset combining both the demographic and biomarker datasets that includes only participants who appear in both has variables `r ncol(MCI_combined_data)` variables, combining the variables from the longitudinal dataset to the baseline dataset. There are a total of `r nrow(MCI_combined_data)` participants in the combined dataset, with an average age of `r mean(pull(MCI_combined_data, current_age))`.
+
+Export the result as a CSV to the data directory. 
+
+```{r}
 write.csv(MCI_combined_data, "results/MCI Combined Data.csv")
 ```
+
+
 
 
 
